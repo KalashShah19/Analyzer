@@ -11,7 +11,7 @@ function analyzeData() {
 }
 
 function parseExpenses(inputText) {
-    const expensePattern = /(\d+(?:\.\d{1,2})?)\s*-\s*([A-Za-z\s]+)\s*\(\s*(\d{2}\/\d{2}\/\d{2})\s*\);
+    const expensePattern = /(\d+(?:\.\d{1,2})?)\s*-\s*([A-Za-z\s]+)\s*\(\s*(\d{2}\/\d{2}\/\d{2})\s*\);/g;
     const expenses = [];
     let match;
 
