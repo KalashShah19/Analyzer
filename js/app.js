@@ -165,11 +165,15 @@ function displayStatistics(stats) {
     yearlyHTML += "</table>";
 
     let labelHTML = "<h2>Label-wise Statistics</h2><table><tr><th>Label</th><th>Sum</th><th>Max</th><th>Min</th><th>Average</th></tr>";
-    for (const label in stats.labelStats) {
-        const { sum, max, min } = stats.labelStats[label];
+
+    const sortedLabels = Object.entries(stats.labelStats)
+        .sort(([, a], [, b]) => b.sum - a.sum);
+    
+    for (const [label, { sum, max, min }] of sortedLabels) {
         const average = stats.labelAverages[label];
         labelHTML += `<tr><td>${label}</td><td>${sum}</td><td>${max}</td><td>${min}</td><td>${average}</td></tr>`;
     }
+    
     labelHTML += "</table>";
 
     let insightsHTML = `<h2>Insights</h2>
