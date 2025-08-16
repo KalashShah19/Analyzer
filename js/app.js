@@ -11,22 +11,21 @@ function analyzeData() {
 }
 
 function parseExpenses(inputText) {
-    const expensePattern = /(\d+(?:\.\d{1,2})?)\s*-\s*([A-Za-z\s]+)\s*\(\s*(\d{2}\/\d{2}\/\d{2})\s*\);/g;
+    const lines = inputText.split('\n');
+    const expensePattern = /^\s*(\d+(?:\.\d+)?)\s*-\s*([a-zA-Z0-9 ]+)\s*\(\s*(\d{2})\/(\d{2})\/(\d{2})\s*\)\s*$/;
     const expenses = [];
-    let match;
 
-    while (match = expensePattern.exec(inputText)) {
-        const amount = parseFloat(match[1]);
-        const label = match[2].trim();
-        const date = match[3].split('/');
+    for (const line of lines) {
+        const match = line.match(expensePattern);
+        if (match) {
+            const amount = parseFloat(match[1]);
+            const label = match[2].trim();
+            const day = parseInt(match[3]);
+            const month = parseInt(match[4]);
+            const year = 2000 + parseInt(match[5]); // assuming 20yy
 
-        expenses.push({
-            amount: amount,
-            label: label,
-            day: parseInt(date[0]),
-            month: parseInt(date[1]),
-            year: 2000 + parseInt(date[2]) // Assuming year in 20yy format
-        });
+            expenses.push({ amount, label, day, month, year });
+        }
     }
 
     return expenses;
@@ -41,24 +40,19 @@ function generateStatistics(expenses) {
     expenses.forEach(expense => {
         const { amount, label, month, year } = expense;
 
-        // Collecting all expenses for total calculations
         allExpenses.push(amount);
 
-        // Monthly Stats
         const monthKey = `${year}-${month}`;
         monthlyStats[monthKey] = monthlyStats[monthKey] || [];
         monthlyStats[monthKey].push(amount);
 
-        // Yearly Stats
         yearlyStats[year] = yearlyStats[year] || [];
         yearlyStats[year].push(amount);
 
-        // Label Stats
         labelStats[label] = labelStats[label] || [];
         labelStats[label].push(amount);
     });
 
-    // Process the statistics
     return {
         totalExpenses: allExpenses.reduce((a, b) => a + b, 0),
         averageMonthlyExpense: calculateAverage(allExpenses),
@@ -67,6 +61,7 @@ function generateStatistics(expenses) {
         labelStats: processLabelStats(labelStats),
         labelAverages: calculateLabelAverages(labelStats),
         highestExpenseLabel: findHighestExpenseLabel(labelStats),
+        highestExpense: findHighestExpense(labelStats),
         monthlyGrowth: calculateMonthlyGrowth(monthlyStats)
     };
 }
@@ -99,7 +94,7 @@ function processLabelStats(labelStats) {
 
 function calculateAverage(expenses) {
     const avg = expenses.reduce((a, b) => a + b, 0) / expenses.length;
-    return avg.toFixed(2); // Round to 2 decimal places
+    return avg.toFixed(2);
 }
 
 function calculateLabelAverages(labelStats) {
@@ -124,6 +119,17 @@ function findHighestExpenseLabel(labelStats) {
     return highestLabel;
 }
 
+function findHighestExpense(labelStats) {
+    let highestAmount = 0;
+    for (const label in labelStats) {
+        const sum = labelStats[label].reduce((a, b) => a + b, 0);
+        if (sum > highestAmount) {
+            highestAmount = sum;
+        }
+    }
+    return highestAmount;
+}
+
 function calculateMonthlyGrowth(monthlyStats) {
     const growth = {};
     const months = Object.keys(monthlyStats).sort();
@@ -144,7 +150,6 @@ function calculateMonthlyGrowth(monthlyStats) {
 function displayStatistics(stats) {
     const output = document.getElementById("output");
     
-    // Monthly Statistics Table
     let monthlyHTML = "<h2>Monthly Statistics</h2><table><tr><th>Month</th><th>Sum</th><th>Max</th><th>Min</th></tr>";
     for (const month in stats.monthlyStats) {
         const { sum, max, min } = stats.monthlyStats[month];
@@ -152,7 +157,6 @@ function displayStatistics(stats) {
     }
     monthlyHTML += "</table>";
 
-    // Yearly Statistics Table
     let yearlyHTML = "<h2>Yearly Statistics</h2><table><tr><th>Year</th><th>Sum</th><th>Max</th><th>Min</th></tr>";
     for (const year in stats.yearlyStats) {
         const { sum, max, min } = stats.yearlyStats[year];
@@ -160,7 +164,6 @@ function displayStatistics(stats) {
     }
     yearlyHTML += "</table>";
 
-    // Label-wise Statistics Table
     let labelHTML = "<h2>Label-wise Statistics</h2><table><tr><th>Label</th><th>Sum</th><th>Max</th><th>Min</th><th>Average</th></tr>";
     for (const label in stats.labelStats) {
         const { sum, max, min } = stats.labelStats[label];
@@ -169,26 +172,22 @@ function displayStatistics(stats) {
     }
     labelHTML += "</table>";
 
-    // Additional Insights
     let insightsHTML = `<h2>Insights</h2>
                         <ul>
                             <li><strong>Total Expenses:</strong> ${stats.totalExpenses}</li>
                             <li><strong>Average Monthly Expense:</strong> ${stats.averageMonthlyExpense}</li>
-                            <li><strong>Highest Expense Label:</strong> ${stats.highestExpenseLabel}</li>
+                            <li><strong>Highest Expense Label:</strong> ${stats.highestExpenseLabel} - ${stats.highestExpense}</li>
                         </ul>`;
     
-    // Monthly Growth Chart (Optional - just to show percentage increase)
     let growthHTML = "<h2>Monthly Expense Growth (%)</h2><table><tr><th>Month</th><th>Growth (%)</th></tr>";
     for (const month in stats.monthlyGrowth) {
         growthHTML += `<tr><td>${month}</td><td>${stats.monthlyGrowth[month].toFixed(2)}%</td></tr>`;
     }
     growthHTML += "</table>";
 
-    // Update the output container
     output.innerHTML = `${monthlyHTML}${yearlyHTML}${labelHTML}${insightsHTML}${growthHTML}`;
 }
 
-// Add event listener for Ctrl + Enter keypress
 document.addEventListener("keydown", function(event) {
     if (event.ctrlKey && event.key === "Enter") {
         analyzeData();
